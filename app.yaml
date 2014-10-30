@@ -15,3 +15,9 @@ handlers:
 libraries:
 - name: webapp2
   version: "2.5.2"
+
+#http://stackoverflow.com/questions/22669528/securely-storing-environment-variables-in-gae-with-app-yaml
+#FIXME
+
+env_variables:
+  SECRET_KEY: "123"
