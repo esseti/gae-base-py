@@ -255,11 +255,11 @@ class BaseJsonAuthHandler(BaseJsonHandler):
 
     def dispatch(self):
         # FIXME no idea if it has to be done like this.
-        logging.debug("in dispatch")
         user_id, user_token = self.get_cookie_user()
         logging.debug("%s %s" %(user_id, user_token))
         if user_id and user_token:
-            user, timestamp = User.get_by_auth_token(user_id, user_token)
+            # FIXME why? why??????
+            user, timestamp = User.get_by_auth_token(int(user_id), user_token)
             logging.debug("%s %s" %(user, timestamp))
             if user:
                 self.request.user = user

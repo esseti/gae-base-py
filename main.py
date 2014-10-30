@@ -50,6 +50,7 @@ class UserDetails(BaseJsonHandler):
     def get(self, user_id):
         # This just autorize this id. used for testing
         logging.debug("User id %s", user_id)
+        # FIXME: why i've to convert to int?
         user = User.get_by_id(int(user_id))
         self.auth_user(user)
         self.render(user)
