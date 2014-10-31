@@ -29,6 +29,10 @@ class BaseJsonHandler(RequestHandler):
     __OUR_DOMAIN = "http://localhost"
     __SECURE = False
 
+    def __init__(self, request, response):
+        self.initialize(request, response)
+        self.__SECRET_KEY = os.environ.get("SECRET_KEY")
+        self.__AUTH_TYPE = os.environ.get("AUTH_TYPE")
 
     # TODO make these two as annotations
     def set_out_pars(self, l):
@@ -60,18 +64,18 @@ class BaseJsonHandler(RequestHandler):
         user_id = user.get_id()
         # TODO: do i've to create a new one everytime?
         user_token = User.create_auth_token(user_id)
-        scs = SecureCookieSerializer(os.environ.get("SECRET_KEY"))
-        uid = scs.serialize('user_id', str(user_id))
-        ut = scs.serialize('user_token', str(user_token))
-        logging.debug("%s %s"%(user_id, user_token))
-        user, timestamp = User.get_by_auth_token(user_id,user_token)
-        logging.debug("%s %s"%(user, timestamp))
-        expiration = datetime.datetime.now() + datetime.timedelta(minutes=10)
-        self.response.set_cookie('user_id', uid, path='/', secure=self.__SECURE,
-                                 expires=expiration)
-        # domain=self.__OUR_DOMAIN
-        self.response.set_cookie('user_token', ut, path='/', secure=self.__SECURE,
-                                 expires=expiration)
+        token = str(user_id) + "|" + user_token
+        if int(self.__AUTH_TYPE) == 1:
+            self.render({"token": token})
+        elif int(self.__AUTH_TYPE) == 2:
+            scs = SecureCookieSerializer(self.__SECRET_KEY)
+            token = scs.serialize('token', token)
+            expiration = datetime.datetime.now() + datetime.timedelta(minutes=1)
+            self.response.set_cookie('gc_token', token, path='/', secure=self.__SECURE,
+                                     expires=expiration)
+            self.render()
+        else:
+            raise Exception("Auth type error")
 
 
     def handle_exception(self, exception, debug_mode):
@@ -218,7 +222,7 @@ class BaseJsonHandler(RequestHandler):
         self.response.write(json.encode(self.__serialize_object(in_dict)))
 
     def render(self, o=None, **kwargs):
-        # TODO: what about passing **kwargs
+        # TODO: what about passing **kwargs?
         if o is None:
             self.response.set_status(200)
         elif isinstance(o, dict):
@@ -233,38 +237,59 @@ class BaseJsonHandler(RequestHandler):
 
 
 class BaseJsonAuthHandler(BaseJsonHandler):
-    def get_cookie_user(self):
+
+    def __init__(self, request, response):
+        self.initialize(request, response)
+        # those two are not inherited from Base class
+        self.__SECRET_KEY = os.environ.get("SECRET_KEY")
+        self.__AUTH_TYPE = os.environ.get("AUTH_TYPE")
+
+
+    def get_user(self):
         """
-        Get the values from the token
+        Get the user from the authorization. Works for HttpAuth or token.
         TODO: can someone check if this is correct?
-        :return:
+        :return: the user or None
         """
-        scs = SecureCookieSerializer(os.environ.get("SECRET_KEY"))
-        uid = scs.deserialize('user_id', self.request.cookies.get('user_id'))
-        ut = scs.deserialize('user_token', self.request.cookies.get('user_token'))
-        return uid, ut
+        logging.debug("%s", int(self.__AUTH_TYPE))
+        if int(self.__AUTH_TYPE) == 1:
+            token = self.request.headers.get("Authorization")
+            if token:
+                uid, ut = token.split("Token")[1].split("|")
+            else:
+                return None
+        elif int(self.__AUTH_TYPE) == 2:
+            logging.debug("here")
+            scs = SecureCookieSerializer(self.__SECRET_KEY)
+            token = self.request.cookies.get('gc_token')
+            if token:
+                uid, ut = scs.deserialize('token', token).split("|")
+            else:
+                return None
+        else:
+            return None
+        if uid and ut:
+            user, timestamp = User.get_by_auth_token(long(uid), ut)
+            if user:
+                return user
+            else:
+                return None
+        else:
+            return None
 
     def __auth_error(self):
         """
-        this beacuse exception is not handled correctly
-        :return:
+        this because exception is not handled correctly
+        :return: render repsonse
         """
         self.response.headers['Content-Type'] = 'application/json'
         self.response.set_status(500, "auth error")
         self.response.write(json.encode({'error': 'auth failed'}))
 
     def dispatch(self):
-        # FIXME no idea if it has to be done like this.
-        user_id, user_token = self.get_cookie_user()
-        logging.debug("%s %s" %(user_id, user_token))
-        if user_id and user_token:
-            # FIXME why? why??????
-            user, timestamp = User.get_by_auth_token(int(user_id), user_token)
-            logging.debug("%s %s" %(user, timestamp))
-            if user:
-                self.request.user = user
-                super(BaseJsonAuthHandler, self).dispatch()
-            else:
-                self.__auth_error()
+        user = self.get_user()
+        if user:
+            self.request.user = user
+            super(BaseJsonHandler, self).dispatch()
         else:
             self.__auth_error()

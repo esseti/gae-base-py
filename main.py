@@ -1,6 +1,7 @@
 import logging
 
 from webapp2 import WSGIApplication
+import webapp2_extras
 from webapp2_extras.appengine.auth.models import User
 
 from gymcentral.exceptions import UserExists
@@ -50,10 +51,9 @@ class UserDetails(BaseJsonHandler):
     def get(self, user_id):
         # This just autorize this id. used for testing
         logging.debug("User id %s", user_id)
-        # FIXME: why i've to convert to int?
-        user = User.get_by_id(int(user_id))
+        # FIXME: why i've to convert to long?
+        user = User.get_by_id(long(user_id))
         self.auth_user(user)
-        self.render(user)
 
 
 class UserMe(BaseJsonAuthHandler):
@@ -62,6 +62,17 @@ class UserMe(BaseJsonAuthHandler):
         user = self.request.user
         logging.debug(user)
         self.render(user)
+
+#TODO: where this goes?
+default_config={
+    'user_model':      'webapp2_extras.appengine.auth.models.User',
+    'session_backend': 'securecookie',
+    'cookie_name':     'auth',
+    'token_max_age':   60, # 1 min
+    'token_new_age':   60,
+    'token_cache_age': 60,
+    'user_attributes': ['username'],
+}
 
 
 app = WSGIApplication([
@@ -72,3 +83,5 @@ app = WSGIApplication([
 
 
                       ], debug=True)
+
+app.config=default_config
