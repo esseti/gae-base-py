@@ -1,9 +1,12 @@
 import binascii
 import os
+import webapp2_extras
 
 __author__ = 'fab,stefano.tranquillini'
 
 from google.appengine.ext import ndb
+
+import webapp2_extras.appengine.auth.models
 
 
 '''
@@ -14,19 +17,13 @@ from google.appengine.ext import ndb
 '''
 
 
-class User(ndb.Model):
-    # dummy
-    #
-
-    username = ndb.StringProperty(required=True)
-    token = ndb.StringProperty(required=True)
+class User(webapp2_extras.appengine.auth.models.User):
 
 
-    def _pre_put_hook(self):
-        if not self.token:
-            # thanks https://github.com/tomchristie/django-rest-framework/blob/master/rest_framework/authtoken/models.py#L36
-            # not sure it's correct
-            self.token = binascii.hexlify(os.urandom(20)).decode()
+    @property
+    def id(self):
+        return self.key.id()
+
 
     @property
     def member_of(self):
@@ -34,15 +31,11 @@ class User(ndb.Model):
                                   Club.is_deleted == False,
                                   Club.members.IN([self.key])))
 
-    @property
-    def id(self):
-        return self.key.id()
 
 
 class Club(ndb.Model):
     # are we sure of this?
-    # what about a compouted property https://cloud.google.com/appengine/docs/python/ndb/properties#computed with key.id()?
-    id = ndb.StringProperty(required=True)
+    # as above
     created = ndb.DateTimeProperty(auto_now_add=True)
     updated = ndb.DateTimeProperty(auto_now=True)
     name = ndb.StringProperty(required=True)
@@ -58,6 +51,10 @@ class Club(ndb.Model):
     # is it more than a single
     tags = ndb.JsonProperty(repeated=True)
     members = ndb.KeyProperty(kind="User", repeated=True)
+
+    @property
+    def id(self):
+        return self.key.id()
 
     def safe_delete(self):
         self.is_deleted = True

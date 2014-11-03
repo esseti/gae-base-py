@@ -1,87 +1,32 @@
 import logging
 
-from webapp2 import WSGIApplication
-import webapp2_extras
-from webapp2_extras.appengine.auth.models import User
-
-from gymcentral.exceptions import UserExists
-from gymcentral.handlers import BaseJsonHandler, BaseJsonAuthHandler
+from gymcentral import cfg
+from gymcentral.app import WSGIApp
+from gymcentral.auth import GCAuth, user_required
+from gymcentral.exceptions import BadRequest, MissingParameters
+from gymcentral.utils import json_from_request
+from models import User as m_User
+# from models import Club as m_Club
 
 
 __author__ = 'stefano'
-
-# TODO:
-# - fix the authentication as explained in the link
-# user extra http://blog.abahgat.com/2013/01/07/user-authentication-with-webapp2-on-google-app-engine/
-# - provide easy-to-use query request, with nextPageToken and size.
-#
+# better way to write the api
+# check the cfg file, it should not be uploaded!
+app = WSGIApp(config=cfg.API_APP_CFG, debug=cfg.DEBUG)
 
 
-class UserList(BaseJsonHandler):
-    # FIXME: how to specify request inputs for each method?
-
-    # we have to manage the pagination here
-    def get(self):
-        # self.set_in_pars(['id'])
-        logging.debug("req %s", self.request.in_dict)
-        self.set_out_pars(['id', 'username'])
-
-        users, token, hasnext = User.query().fetch_page(10)
-        # logging.debug("%s %s %s"%(users, token,hasnext))
-        self.render(users, token=123)
-        # is there a way to do this automatically?
+@app.route('/myapi/test/<user_id>', methods=('GET',))
+def get_test(req, user_id):
+    user = m_User.query().get()
+    return GCAuth.auth_user(user)
 
 
-    def post(self):
-        self.set_in_pars(['username'])
-        self.set_out_pars(['id', 'token'])
-        in_dict = self.request.in_dict
-
-        res = User.create_user('own:' + in_dict['username'], username=in_dict['username'],unique_properties=['username'])
-        logging.debug("res %s", res)
-        if not res[0]:
-            raise UserExists
-        else:
-            user = res[1]
-            self.auth_user(user)
-            self.render(user)
-
-
-class UserDetails(BaseJsonHandler):
-    def get(self, user_id):
-        # This just autorize this id. used for testing
-        logging.debug("User id %s", user_id)
-        # FIXME: why i've to convert to long?
-        user = User.get_by_id(long(user_id))
-        self.auth_user(user)
-
-
-class UserMe(BaseJsonAuthHandler):
-    def get(self):
-        logging.debug("in me")
-        user = self.request.user
-        logging.debug(user)
-        self.render(user)
-
-#TODO: where this goes?
-default_config={
-    'user_model':      'webapp2_extras.appengine.auth.models.User',
-    'session_backend': 'securecookie',
-    'cookie_name':     'auth',
-    'token_max_age':   60, # 1 min
-    'token_new_age':   60,
-    'token_cache_age': 60,
-    'user_attributes': ['username'],
-}
-
-
-app = WSGIApplication([
-
-                          (r'/user/', UserList),
-                          (r'/user/me/', UserMe),
-                          (r'/user/(?P<user_id>\d+)/', UserDetails),
-
-
-                      ], debug=True)
-
-app.config=default_config
+@app.route('/myapi/test/<param>', methods=('POST',))
+@user_required
+def update_custom(req, param):
+    req_data = json_from_request(req)
+    logging.debug("%s %s" % (type(req_data), req_data))
+    if not 'test' in req_data:
+        raise MissingParameters("ciao")
+    req_data['param'] = param
+    return req_data

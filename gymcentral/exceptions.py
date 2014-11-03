@@ -6,33 +6,24 @@ class GCException(Exception):
     pass
 
 
-class MissingParameters(GCException):
+class BadRequest(GCException):
     code = 400
+
+
+class MissingParameters(GCException):
     __ERROR_MISSING = "The field %s is missing in your request"
 
-    def __init__(self, field, code):
-        self.message = (self.__ERROR_MISSING % field)
-        self.code = code
-
-
-class DecodingParameter(GCException):
-    code = 400
-    __ERROR_MISSING = "The field %s is missing in the model"
-
-    def __init__(self, field, code):
-        self.message = (self.__ERROR_MISSING % field)
-        self.code = code
+    def __init__(self, field):
+        Exception.__init__(self)
+        self.args = ((self.__ERROR_MISSING % field),)
 
 
 class AuthenticationError(GCException):
-    code = 400
+    code = 401
 
-    def __init__(self):
-        self.message = "Authentication Error"
+    def __init__(self, message=None):
+        if message:
+            self.args = ("Authentication Error: "+message,)
+        else:
+            self.args = ("Authentication Error",)
 
-
-class UserExists(GCException):
-    code = 400
-
-    def __init__(self):
-        self.message = "User Already Exists"
