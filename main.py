@@ -1,6 +1,6 @@
 import logging
 
-from gymcentral import cfg
+import cfg
 from gymcentral.app import WSGIApp
 from gymcentral.auth import GCAuth, user_required
 from gymcentral.exceptions import BadRequest, MissingParameters
