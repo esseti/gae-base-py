@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 
 import webapp2
 
-from gymcentral import cfg
-from gymcentral.exceptions import AuthenticationError
+import cfg
+
 from gymcentral.utils import json_serializer, error
 
 
@@ -20,7 +20,7 @@ class WSGIApp(webapp2.WSGIApplication):
 
     @staticmethod
     def custom_dispatcher(router, request, response):
-        logging.debug("router %s",router)
+        # logging.debug("router %s", router)
         origin = request.headers.get('origin', '*')
 
         # STE: this is for cross orgin calls, correct? i should not need it.
@@ -51,7 +51,7 @@ class WSGIApp(webapp2.WSGIApplication):
                 json.dump(rv, resp, default=json_serializer)
 
             # cache response if requested and possible
-            #STE: i don't get this as well
+            # STE: i don't get this as well
             if request.get('cache') and request.method in ('GET', 'OPTIONS'):
                 exp_date = datetime.utcnow() + timedelta(seconds=cfg.API_CACHE_MAX_AGE)
                 cache_ctrl = 'max-age=%d, must-revalidate' % cfg.API_CACHE_MAX_AGE
@@ -74,7 +74,10 @@ class WSGIApp(webapp2.WSGIApplication):
                 logging.exception(ex)
             elif msg:
                 logging.error(msg)
-            json.dump(error(msg, code=resp.status_int), resp)
+            add_args = []
+            if hasattr(ex, 'field'):
+                add_args.append(('field', ex.field))
+            json.dump(error(msg, code=resp.status_int, add_args=add_args), resp)
         return resp
 
     def route(self, *args, **kwargs):

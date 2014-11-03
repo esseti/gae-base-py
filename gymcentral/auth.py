@@ -5,7 +5,11 @@ import models
 __author__ = 'stefano'
 
 class GCAuth():
+    """
+    Class that manages the Authorization
 
+    TODO: create a cron job that deletes old/expired tokens
+    """
     __user_model = models.User
 
     @classmethod

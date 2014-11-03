@@ -1,12 +1,12 @@
-import binascii
-import os
 import webapp2_extras
+
+from gymcentral.gc_models import GCModel, GCUser
+
 
 __author__ = 'fab,stefano.tranquillini'
 
 from google.appengine.ext import ndb
 
-import webapp2_extras.appengine.auth.models
 
 
 '''
@@ -16,15 +16,8 @@ import webapp2_extras.appengine.auth.models
  to interpretate the data when we are going to use it.
 '''
 
-
-class User(webapp2_extras.appengine.auth.models.User):
-
-
-    @property
-    def id(self):
-        return self.key.id()
-
-
+# User must be of this type,
+class User(GCUser):
     @property
     def member_of(self):
         return Club.query(ndb.AND(Club.is_open == True,
@@ -32,8 +25,7 @@ class User(webapp2_extras.appengine.auth.models.User):
                                   Club.members.IN([self.key])))
 
 
-
-class Club(ndb.Model):
+class Club(GCModel):
     # are we sure of this?
     # as above
     created = ndb.DateTimeProperty(auto_now_add=True)
@@ -52,6 +44,11 @@ class Club(ndb.Model):
     tags = ndb.JsonProperty(repeated=True)
     members = ndb.KeyProperty(kind="User", repeated=True)
 
+    def is_valid(self):
+        if self.owners:
+            return True
+        return False, 'owners'
+
     @property
     def id(self):
         return self.key.id()
@@ -66,27 +63,26 @@ class Club(ndb.Model):
         return cls.query(cls.email == email)
 
     @classmethod
-    def filter_by_language(cls, langugage):
-        #  this is an and
-        return cls.query().filter(cls.language == langugage)
+    def filter_by_language(cls, language):
+        # this is an and
+        return cls.query().filter(cls.language == language)
 
     @classmethod
     def filter_by_training(cls, training):
-        #  this is an and
+        # this is an and
         return cls.query(cls.training_type.IN(training))
 
     @property
     def membersUser(self):
         return ndb.get_multi(self.members)
 
-    def add_member(self,member):
-        if (member.key not in self.members):
+    def add_member(self, member):
+        if member.key not in self.members:
             self.members.append(member.key)
             self.put()
 
-
-    def rm_member(self,member):
-        if (member.key  in self.members):
+    def rm_member(self, member):
+        if member.key in self.members:
             self.members.remove(member.key)
             self.put()
 

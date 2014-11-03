@@ -10,8 +10,16 @@ class BadRequest(GCException):
     code = 400
 
 
+class ValidationError(GCException):
+    __ERROR_MISSING = "Validation failed on field  '%s'"
+
+    def __init__(self, field):
+        Exception.__init__(self)
+        self.args = ((self.__ERROR_MISSING % field),)
+        self.field = field
+
 class MissingParameters(GCException):
-    __ERROR_MISSING = "The field %s is missing in your request"
+    __ERROR_MISSING = "The field '%s' is missing"
 
     def __init__(self, field):
         Exception.__init__(self)
