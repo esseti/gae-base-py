@@ -10,7 +10,7 @@ from setuptools import setup
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-# https://pypi.python.org/pypi?%3Aaction=list_classifiers
+# https://pypi.python.org/pypi?action=list_classifiers
 setup(
     name = "GymCentral - API App",
     version = "0.0.1",
