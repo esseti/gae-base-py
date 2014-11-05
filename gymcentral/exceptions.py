@@ -1,16 +1,33 @@
+import httplib
+
 __author__ = 'stefano'
 
 
 # always extend this class, it's used in the handler to handle the notifications
-class GCException(Exception):
+class GCAPIException(Exception):
     pass
 
 
-class BadRequest(GCException):
+# use this for server errors
+class GCServerException(Exception):
+    pass
+
+
+class BadRequest(GCAPIException):
     code = 400
 
 
-class ValidationError(GCException):
+class NotFoundException(GCAPIException):
+    code = httplib.NOT_FOUND
+    __ERROR_MISSING = "Not found"
+
+    def __init__(self):
+        Exception.__init__(self)
+        self.args = (self.__ERROR_MISSING,)
+
+
+class ValidationError(GCAPIException):
+    code = httplib.BAD_REQUEST
     __ERROR_MISSING = "Validation failed on field  '%s'"
 
     def __init__(self, field):
@@ -18,7 +35,9 @@ class ValidationError(GCException):
         self.args = ((self.__ERROR_MISSING % field),)
         self.field = field
 
-class MissingParameters(GCException):
+
+class MissingParameters(GCAPIException):
+    code = httplib.BAD_REQUEST
     __ERROR_MISSING = "The field '%s' is missing"
 
     def __init__(self, field):
@@ -26,12 +45,12 @@ class MissingParameters(GCException):
         self.args = ((self.__ERROR_MISSING % field),)
 
 
-class AuthenticationError(GCException):
-    code = 401
+class AuthenticationError(GCAPIException):
+    code = httplib.UNAUTHORIZED
 
     def __init__(self, message=None):
         if message:
-            self.args = ("Authentication Error: "+message,)
+            self.args = ("Authentication Error: " + message,)
         else:
             self.args = ("Authentication Error",)
 

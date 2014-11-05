@@ -31,6 +31,13 @@ def error(msg, code=400, add_args=[]):
     return ret
 
 
+def sanitize_list(data, allowed=[], hidden=[]):
+    ret = []
+    for d in data:
+        ret.append(sanitize_json(d, allowed, hidden))
+    return ret
+
+
 def sanitize_json(data, allowed=[], hidden=[]):
     ret = {}
     if allowed:
@@ -50,6 +57,7 @@ def sanitize_json(data, allowed=[], hidden=[]):
 
 def json_from_request(req, *allowed_props):
     try:
+        logging.debug("body %s", req.body)
         data = json.loads(req.body)
         if allowed_props:
             sanitize_json(data, allowed=allowed_props)
@@ -70,6 +78,15 @@ def json_serializer(obj):
     elif isinstance(obj, blobstore.BlobKey):
         return str(obj)
     elif hasattr(obj, 'to_dict'):
-        return obj.to_dict()
+        to_dict = obj.to_dict()
+        # adding the id if possible
+        if hasattr(obj,'id'):
+            to_dict['id'] = obj.id
+        return to_dict
+    elif isinstance(obj,list):
+        ret = []
+        for o in obj:
+            ret.append(json_serializer(o))
+        return ret
     else:
         return obj

@@ -1,11 +1,10 @@
 import json
 import logging
-from datetime import datetime, timedelta
 
 import webapp2
 
 import cfg
-
+from gymcentral.exceptions import GCAPIException
 from gymcentral.utils import json_serializer, error
 
 
@@ -27,16 +26,16 @@ class WSGIApp(webapp2.WSGIApplication):
         # Default response obj
         # JSON (or empty by still json content type) response
         resp = webapp2.Response(content_type='application/json', charset='UTF-8')
-        if request.method == 'OPTIONS':
-            # CORS pre-flight request
-            resp.headers.update({
-                'Access-Control-Allow-Credentials': 'true',
-                'Access-Control-Allow-Origin': origin,
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
-                'Access-Control-Allow-Headers': ('accept, origin, content-type, '
-                                                 'x-requested-with, cookie'),
-                'Access-Control-Max-Age': str(cfg.AUTH_TOKEN_MAX_AGE)})
-            return resp
+        # if request.method == 'OPTIONS':
+        # # CORS pre-flight request
+        #     resp.headers.update({
+        #         'Access-Control-Allow-Credentials': 'true',
+        #         'Access-Control-Allow-Origin': origin,
+        #         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+        #         'Access-Control-Allow-Headers': ('accept, origin, content-type, '
+        #                                          'x-requested-with, cookie'),
+        #         'Access-Control-Max-Age': str(cfg.AUTH_TOKEN_MAX_AGE)})
+        #     return resp
 
         try:
             rv = router.default_dispatcher(request, response)
@@ -52,19 +51,19 @@ class WSGIApp(webapp2.WSGIApplication):
 
             # cache response if requested and possible
             # STE: i don't get this as well
-            if request.get('cache') and request.method in ('GET', 'OPTIONS'):
-                exp_date = datetime.utcnow() + timedelta(seconds=cfg.API_CACHE_MAX_AGE)
-                cache_ctrl = 'max-age=%d, must-revalidate' % cfg.API_CACHE_MAX_AGE
-                resp.headers.update({
-                    'Cache-Control': cache_ctrl,
-                    'Expires': exp_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
-                })
+            # if request.get('cache') and request.method in ('GET', 'OPTIONS'):
+            #     exp_date = datetime.utcnow() + timedelta(seconds=cfg.API_CACHE_MAX_AGE)
+            #     cache_ctrl = 'max-age=%d, must-revalidate' % cfg.API_CACHE_MAX_AGE
+            #     resp.headers.update({
+            #         'Cache-Control': cache_ctrl,
+            #         'Expires': exp_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
+            #     })
 
             resp.headers.update({
                 'Access-Control-Allow-Origin': origin,
                 'Access-Control-Allow-Credentials': 'true'})
 
-        except Exception as ex:
+        except GCAPIException as ex:
             if hasattr(ex, 'code'):
                 resp.status = ex.code
             else:
@@ -78,6 +77,14 @@ class WSGIApp(webapp2.WSGIApplication):
             if hasattr(ex, 'field'):
                 add_args.append(('field', ex.field))
             json.dump(error(msg, code=resp.status_int, add_args=add_args), resp)
+        except Exception as e:
+            # for other execptions, return 500 error and log it internally
+            msg = str(e)
+            if cfg.DEBUG:
+                logging.exception(msg)
+            elif msg:
+                logging.error(msg)
+            json.dump(error("Internal Server Error", code=500), resp)
         return resp
 
     def route(self, *args, **kwargs):

@@ -1,8 +1,14 @@
+import json
+import logging
+from urllib import urlencode
+import urllib2
+from google.appengine.api import urlfetch
 from gymcentral.exceptions import AuthenticationError
 import models
 
 
 __author__ = 'stefano'
+
 
 class GCAuth():
     """
@@ -13,7 +19,7 @@ class GCAuth():
     __user_model = models.User
 
     @classmethod
-    def auth_user(cls,user):
+    def auth_user(cls, user):
         """
         get the token of the current user
         :param user
@@ -27,29 +33,30 @@ class GCAuth():
         # elif int(self.__AUTH_TYPE) == 2:
         # scs = SecureCookieSerializer(self.__SECRET_KEY)
         # token = scs.serialize('token', token)
-        #     expiration = datetime.datetime.now() + datetime.timedelta(minutes=1)
+        # expiration = datetime.datetime.now() + datetime.timedelta(minutes=1)
         #     self.response.set_cookie('gc_token', token, path='/', secure=self.__SECURE,
         #                              expires=expiration)
         #     self.render()
 
     @classmethod
-    def get_user(cls, req):
+    def _get_user(cls, req):
         """
-        Get the user from the authorization.
-        :return: the user or None
+        actual method that return the user or None
+        :param req:
+        :return:
         """
         # if int(self.__AUTH_TYPE) == 1:
         token = req.headers.get("Authorization")
         if token:
             uid, ut = token.split("Token")[1].split("|")
         else:
-            raise AuthenticationError("Token is missing")
+            return None
         # NOTE: we do not use this
         # elif int(self.__AUTH_TYPE) == 2:
         # logging.debug("here")
         # scs = SecureCookieSerializer(self.__SECRET_KEY)
         # token = self.request.cookies.get('gc_token')
-        #     if token:
+        # if token:
         #         uid, ut = scs.deserialize('token', token).split("|")
         #     else:
         #         return None
@@ -64,6 +71,17 @@ class GCAuth():
         else:
             return None
 
+    @classmethod
+    def get_user(cls, req):
+        """
+        Get the user from the authorization.
+        :return: the user or None
+        """
+        user = cls._get_user(req)
+        if user:
+            return user
+        else:
+            raise AuthenticationError("Auth error")
 
 def user_required(handler):
     """
@@ -80,3 +98,6 @@ def user_required(handler):
         return handler(req, *args, **kwargs)
 
     return wrapper
+
+
+
