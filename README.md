@@ -7,7 +7,7 @@ base gae py project for our internal team.
 
 #TO INSTALL
 - download the project (via git)
-- link the gymcentral folder into your project as a symbolic link `ln -s /folder/where/is/it gymcentral`
+- link the gymcentral folder into your project as a symbolic link `ln -s /folder/where/it/is gymcentral`
 - [to be checked] when deploy on gae server, copy the folder into the project.
 
 #Example
