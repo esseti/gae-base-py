@@ -6,10 +6,8 @@ base gae py project for our internal team.
 ***work in progress***
 
 #TO INSTALL
-`pip install --upgrade git+git://github.com/esseti/gae-base-py.git`  
-for gae project:
 - download the project (via git)
-- link the gymcentral folder into your project as a symbolic link `ln -s ...`
+- link the gymcentral folder into your project as a symbolic link `ln -s /folder/where/is/it gymcentral`
 - [to be checked] when deploy on gae server, copy the folder into the project.
 
 #Example
