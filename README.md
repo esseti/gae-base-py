@@ -11,4 +11,4 @@ base gae py project for our internal team.
 - [to be checked] when deploy on gae server, copy the folder into the project. (do this only at the end, the symbolic link allows you to update this project without the need of copy and paste folders)
 
 #Example
-check [`main`](https://github.com/esseti/gae-base-py/blob/master/main.py) file
+check [`main`](https://github.com/gymcentral/gymcentral) file
