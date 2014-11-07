@@ -84,7 +84,7 @@ class GCModel(ndb.Model):
                 return ret
             else:
                 logging.debug("Type %s %s", type(o), o)
-                raise Exception("Type not found")
+                raise Exception("Type not found %s %s"%(type(o),o))
         else:
             # in case the size is not specified, then it's -1 we use the value in the config
             if size == -1:
