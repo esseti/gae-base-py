@@ -7,7 +7,7 @@ base gae py project for our internal team.
 
 #TO INSTALL
 use it as a submodel with git.
-(tutorial here)[https://chrisjean.com/2009/04/20/git-submodules-adding-using-removing-and-updating/]
+[tutorial here](https://chrisjean.com/2009/04/20/git-submodules-adding-using-removing-and-updating/)
 
 #Example
 check [`this project`](https://github.com/gymcentral/gymcentral) 
