@@ -5,7 +5,7 @@ import webapp2
 
 import cfg
 from gymcentral.exceptions import GCAPIException
-from gymcentral.utils import json_serializer, error
+from gymcentral.gc_utils import json_serializer, error
 
 
 __author__ = 'stefano'
@@ -28,7 +28,7 @@ class WSGIApp(webapp2.WSGIApplication):
         resp = webapp2.Response(content_type='application/json', charset='UTF-8')
         # if request.method == 'OPTIONS':
         # # CORS pre-flight request
-        #     resp.headers.update({
+        # resp.headers.update({
         #         'Access-Control-Allow-Credentials': 'true',
         #         'Access-Control-Allow-Origin': origin,
         #         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
@@ -39,8 +39,12 @@ class WSGIApp(webapp2.WSGIApplication):
 
         try:
             rv = router.default_dispatcher(request, response)
+
             if isinstance(rv, webapp2.Response):
+                # if we want HTML then
+                # return rv
                 raise Exception("This type or response is not allowed")
+
 
             # STE: i don't get this, it's a object that is then serialized?
             if isinstance(rv, tuple):
@@ -84,7 +88,8 @@ class WSGIApp(webapp2.WSGIApplication):
                 logging.exception(msg)
             elif msg:
                 logging.error(msg)
-            json.dump(error("Internal Server Error", code=500), resp)
+            add_args = [('exception_message', msg)]
+            json.dump(error("Internal Server Error", code=500, add_args=add_args), resp)
         return resp
 
     def route(self, *args, **kwargs):

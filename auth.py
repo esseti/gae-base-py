@@ -39,7 +39,7 @@ class GCAuth():
         #     self.render()
 
     @classmethod
-    def _get_user(cls, req):
+    def get_user_or_none(cls, req):
         """
         actual method that return the user or None
         :param req:
