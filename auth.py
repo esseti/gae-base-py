@@ -77,7 +77,7 @@ class GCAuth():
         Get the user from the authorization.
         :return: the user or None
         """
-        user = cls._get_user(req)
+        user = cls.get_user_or_none(req)
         if user:
             return user
         else:

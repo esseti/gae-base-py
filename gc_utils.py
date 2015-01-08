@@ -33,6 +33,13 @@ def error(msg, code=400, add_args=[]):
 
 
 def sanitize_list(data, allowed=[], hidden=[]):
+    '''
+    Takes a list in input and returns a list of dict that contains only allowed fields, hiding the  the hidden fields
+    :param data: the list
+    :param allowed: the list of allowed fields
+    :param hidden: the list of fields to hide
+    :return: a list of dicts
+    '''
     ret = []
     for d in data:
         ret.append(sanitize_json(d, allowed, hidden))
@@ -40,11 +47,22 @@ def sanitize_list(data, allowed=[], hidden=[]):
 
 
 def __camel_string(snake_str):
+    '''
+    convert snake string to camelString
+    e.g., hello_world -> helloWorld
+    :param snake_str: the snake string
+    :return: the camleString
+    '''
     components = snake_str.split('_')
     return components[0] + "".join(x.title() for x in components[1:])
 
 
 def __camel_case(d):
+    '''
+    utils to transform the dictionary fields from snake to camel case
+    :param d:
+    :return:
+    '''
     ret_camel = {}
     for e in d:
         ret_camel[__camel_string(e)] = d[e]
@@ -52,6 +70,13 @@ def __camel_case(d):
 
 
 def sanitize_json(data, allowed=[], hidden=[]):
+    '''
+    Takes a dict in input and returns a dict  that contains only allowed fields, hiding the  the hidden fields
+    :param data: the dict
+    :param allowed: the allowed fields
+    :param hidden: the list of fields to hide
+    :return: a dict
+    '''
     ret = {}
     if allowed:
         for attr in allowed:
@@ -70,7 +95,29 @@ def sanitize_json(data, allowed=[], hidden=[]):
     return ret
 
 
+def json_from_paginated_request(req, pars=()):
+    '''
+    Takes the request in input and creates a dictionary that contains:
+    - the parameters for paginated requests.
+    - additional parameters specified by the developer as list of tuples: name, default_value.
+    :param req: the request object
+    :param pars: additional parameters as list of tuples
+    :return:
+    '''
+    # if it's found then the value, otherwise the default
+    __items = (('page', 1), ('size', -1)) + pars
+    ret = {}
+    for item in __items:
+        ret[item[0]] = req.get(item[0], item[1])
+    return ret
+
 def json_from_request(req, *allowed_props):
+    '''
+    Takes in input the request and creates a dict that contains the allowed properties.
+    :param req: the request object
+    :param allowed_props: list of properties that the object has to contain.
+    :return: json object
+    '''
     try:
         logging.debug("body %s", req.body)
         data = json.loads(req.body)
@@ -83,11 +130,18 @@ def json_from_request(req, *allowed_props):
 
 
 def json_serializer(obj):
-    if isinstance(obj, datetime):
-        return str(obj)
-        # return int(time.mktime(obj.utctimetuple()) * 1e3 + obj.microsecond / 1e3)
-    elif hasattr(obj, 'isoformat'):
+    '''
+    serialize an object to a dict.
+
+    :param obj: the object
+    :return: the dict
+    '''
+    if hasattr(obj, 'isoformat'):
+        logging.info("ISOFORMAT, remember to update the docs")
         return obj.isoformat()
+    # elif isinstance(obj, datetime):
+    #     return str(obj)
+        # return int(time.mktime(obj.utctimetuple()) * 1e3 + obj.microsecond / 1e3)
     elif isinstance(obj, ndb.Key):
         return obj.urlsafe()  # obj.id()
     elif isinstance(obj, blobstore.BlobKey):

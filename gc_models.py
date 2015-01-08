@@ -19,7 +19,7 @@ class GCModel(ndb.Model):
         return self.key.urlsafe()
 
     def is_valid(self):
-        logging.warning("is_valid() should be implemented. Class: %s", self._class_name())
+        logging.warning("is_valid() should be implemented. Class: %s .. returning TRUE", self._class_name())
         return True
 
 
