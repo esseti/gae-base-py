@@ -25,16 +25,17 @@ class WSGIApp(webapp2.WSGIApplication):
         # STE: this is for cross orgin calls, correct? i should not need it.
         # Default response obj
         # JSON (or empty by still json content type) response
+        # for 204 the content_type shouldn't be set..
         resp = webapp2.Response(content_type='application/json', charset='UTF-8')
         # if request.method == 'OPTIONS':
         # # CORS pre-flight request
-        # resp.headers.update({
-        #         'Access-Control-Allow-Credentials': 'true',
-        #         'Access-Control-Allow-Origin': origin,
-        #         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
-        #         'Access-Control-Allow-Headers': ('accept, origin, content-type, '
-        #                                          'x-requested-with, cookie'),
-        #         'Access-Control-Max-Age': str(cfg.AUTH_TOKEN_MAX_AGE)})
+        #     resp.headers.update({
+        #     'Access-Control-Allow-Credentials': 'true',
+        #     'Access-Control-Allow-Origin': origin,
+        #             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+        #             'Access-Control-Allow-Headers': ('accept, origin, content-type, '
+        #                                              'x-requested-with, cookie'),
+        #             'Access-Control-Max-Age': str(cfg.AUTH_TOKEN_MAX_AGE)})
         #     return resp
 
         try:
@@ -46,7 +47,7 @@ class WSGIApp(webapp2.WSGIApplication):
                 raise Exception("This type or response is not allowed")
 
 
-            # STE: i don't get this, it's a object that is then serialized?
+            # STE: in case we want to specify the code
             if isinstance(rv, tuple):
                 code, rv = rv
                 resp.status = code
@@ -66,6 +67,10 @@ class WSGIApp(webapp2.WSGIApplication):
             resp.headers.update({
                 'Access-Control-Allow-Origin': origin,
                 'Access-Control-Allow-Credentials': 'true'})
+            resp.headers['Content-Type'] = "text"
+
+
+
 
         except GCAPIException as ex:
             if hasattr(ex, 'code'):

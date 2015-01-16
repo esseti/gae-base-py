@@ -1,7 +1,10 @@
+import webapp2
+
 __author__ = 'stefano'
 import logging
 import json
 from datetime import datetime
+import time
 
 from google.appengine.ext import ndb
 from google.appengine.ext import blobstore
@@ -111,6 +114,7 @@ def json_from_paginated_request(req, pars=()):
         ret[item[0]] = req.get(item[0], item[1])
     return ret
 
+
 def json_from_request(req, *allowed_props):
     '''
     Takes in input the request and creates a dict that contains the allowed properties.
@@ -118,15 +122,18 @@ def json_from_request(req, *allowed_props):
     :param allowed_props: list of properties that the object has to contain.
     :return: json object
     '''
-    try:
-        logging.debug("body %s", req.body)
-        data = json.loads(req.body)
-        if allowed_props:
-            sanitize_json(data, allowed=allowed_props)
-        return data
-    except (TypeError, ValueError) as e:
-        logging.error(e)
-        raise BadRequest("Invalid JSON")
+    if req.body:
+        try:
+            logging.debug("body %s", req.body)
+            data = json.loads(req.body)
+            if allowed_props:
+                sanitize_json(data, allowed=allowed_props)
+            return data
+        except (TypeError, ValueError) as e:
+            logging.error(e)
+            raise BadRequest("Invalid JSON")
+    else:
+        return {}
 
 
 def json_serializer(obj):
@@ -136,14 +143,12 @@ def json_serializer(obj):
     :param obj: the object
     :return: the dict
     '''
-    if hasattr(obj, 'isoformat'):
-        logging.info("ISOFORMAT, remember to update the docs")
-        return obj.isoformat()
-    # elif isinstance(obj, datetime):
-    #     return str(obj)
-        # return int(time.mktime(obj.utctimetuple()) * 1e3 + obj.microsecond / 1e3)
+    # NOTE: this is also called when the app dumps the json, so be careful when editing
+    # @propery are not rendered
+    if isinstance(obj, datetime):
+        return int(time.mktime(obj.utctimetuple()) * 1e3 + obj.microsecond / 1e3)
     elif isinstance(obj, ndb.Key):
-        return obj.urlsafe()  # obj.id()
+        return obj.urlsafe()
     elif isinstance(obj, blobstore.BlobKey):
         return str(obj)
     elif hasattr(obj, 'to_dict'):
@@ -151,6 +156,8 @@ def json_serializer(obj):
         # adding the id if possible
         if hasattr(obj, 'id'):
             to_dict['id'] = obj.id
+        # do not return emtpy fields.
+        # return dict((k, v) for k, v in to_dict.iteritems() if v)
         return to_dict
     elif isinstance(obj, list):
         ret = []
