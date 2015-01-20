@@ -43,8 +43,8 @@ class WSGIApp(webapp2.WSGIApplication):
 
             if isinstance(rv, webapp2.Response):
                 # if we want HTML then
-                # return rv
-                raise Exception("This type or response is not allowed")
+                return rv
+                # raise Exception("This type or response is not allowed")
 
 
             # STE: in case we want to specify the code
@@ -67,7 +67,6 @@ class WSGIApp(webapp2.WSGIApplication):
             resp.headers.update({
                 'Access-Control-Allow-Origin': origin,
                 'Access-Control-Allow-Credentials': 'true'})
-            resp.headers['Content-Type'] = "text"
 
 
 
