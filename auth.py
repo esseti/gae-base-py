@@ -1,13 +1,15 @@
 import json
+import logging
 from urllib import urlencode
 import urllib2
 
 from google.appengine.api import urlfetch
-
 from webapp2_extras.securecookie import SecureCookieSerializer
 
 import cfg
 from gymcentral.exceptions import AuthenticationError
+
+# TODO: change this to your app.
 import models
 
 
@@ -20,12 +22,23 @@ class GCAuth():
 
     TODO: create a cron job that deletes old/expired tokens
     """
+
     __user_model = models.User
     __config_file = cfg
     __app_name = "gc"
 
     @classmethod
-    def auth_user(cls, user):
+    def get_secure_cookie(cls, token):
+        scs = SecureCookieSerializer(cls.__config_file.API_APP_CFG[cls.__app_name]['SECRET_KEY'])
+        token = scs.serialize('token', token)
+        return token
+
+    @classmethod
+    def get_token(self, token):
+        return {"token": token}
+
+    @classmethod
+    def auth_user_token(cls, user):
         """
         get the token of the current user
         :param user
@@ -34,14 +47,7 @@ class GCAuth():
         user_id = user.get_id()
         user_token = cls.__user_model.create_auth_token(user_id)
         token = str(user_id) + "|" + user_token
-        # # if int(self.__AUTH_TYPE) == 1:
-        # return {"token": token}
-        # elif int(self.__AUTH_TYPE) == 2:
-        scs = SecureCookieSerializer(cls.__config_file.API_APP_CFG[cls.__app_name]['SECRET_KEY'])
-        token = scs.serialize('token', token)
         return token
-
-
 
     @classmethod
     def get_user_or_none(cls, req):
@@ -50,24 +56,28 @@ class GCAuth():
         :param req:
         :return:
         """
-        # if int(self.__AUTH_TYPE) == 1:
-        # token = req.headers.get("Authorization")
-        # if token:
-        # uid, ut = token.split("Token")[1].split("|")
-        # else:
-        # return None
-        # NOTE: we do not use this
-        # elif int(self.__AUTH_TYPE) == 2:
-        # logging.debugr
-        scs = SecureCookieSerializer(cls.__config_file.API_APP_CFG[cls.__app_name]['SECRET_KEY'])
-        token = req.cookies.get('gc_token')
-        if token:
-            uid, ut = scs.deserialize('token', token).split("|")
-        else:
-            return None
+
+        uid = None
+        ut = None
+        # # in case it's test. use remote user.
+        # if 'REMOTE_USER' in req.environ and cls.__config_file.DEBUG:
+        # token = req.environ['REMOTE_USER']
+        #     uid, ut = token.split("Token")[1].split("|")
+        # even if in test, but the remote user is not found. then...
+        if not uid and not ut:
+            scs = SecureCookieSerializer(cls.__config_file.API_APP_CFG[cls.__app_name]['SECRET_KEY'])
+            token = req.cookies.get('gc_token')
+            if token:
+                uid, ut = scs.deserialize('token', token).split("|")
+            else:
+                token = req.headers.get("Authorization")
+                if token:
+                    uid, ut = token.split("Token")[1].split("|")
+                else:
+                    return None
         if uid and ut:
             user, timestamp = cls.__user_model.get_by_auth_token(long(uid), ut)
-            if user:
+            if long(user.get_id()) == long(uid):
                 return user
             else:
                 return None

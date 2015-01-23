@@ -1,5 +1,3 @@
-import webapp2
-
 __author__ = 'stefano'
 import logging
 import json
@@ -74,12 +72,14 @@ def __camel_case(d):
 
 def sanitize_json(data, allowed=[], hidden=[]):
     '''
-    Takes a dict in input and returns a dict  that contains only allowed fields, hiding the  the hidden fields
+    Takes a dict or a Model in input and returns a dict  that contains only allowed fields, hiding the  the hidden fields
     :param data: the dict
     :param allowed: the allowed fields
     :param hidden: the list of fields to hide
     :return: a dict
     '''
+    if isinstance(data, ndb.Model):
+        data = data.to_dict()
     ret = {}
     if allowed:
         for attr in allowed:
@@ -124,7 +124,6 @@ def json_from_request(req, *allowed_props):
     '''
     if req.body:
         try:
-            logging.debug("body %s", req.body)
             data = json.loads(req.body)
             if allowed_props:
                 sanitize_json(data, allowed=allowed_props)
@@ -153,11 +152,6 @@ def json_serializer(obj):
         return str(obj)
     elif hasattr(obj, 'to_dict'):
         to_dict = obj.to_dict()
-        # adding the id if possible
-        if hasattr(obj, 'id'):
-            to_dict['id'] = obj.id
-        # do not return emtpy fields.
-        # return dict((k, v) for k, v in to_dict.iteritems() if v)
         return to_dict
     elif isinstance(obj, list):
         ret = []
@@ -166,3 +160,7 @@ def json_serializer(obj):
         return ret
     else:
         return obj
+
+
+def date_to_js_timestamp(obj):
+    return int(time.mktime(obj.utctimetuple()) * 1e3 + obj.now().microsecond / 1e3)

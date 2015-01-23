@@ -1,5 +1,4 @@
 from google.appengine.ext import ndb
-
 from webapp2_extras.appengine.auth.models import User
 
 from gymcentral.exceptions import ValidationError
@@ -9,10 +8,12 @@ __author__ = 'stefano'
 
 
 class GCModel(ndb.Model):
-
     @property
     def id(self):
-        return self.key.urlsafe()
+        if self.key:
+            return self.key.urlsafe()
+        else:
+            return None
 
     @property
     def safe_key(self):
@@ -43,7 +44,15 @@ class GCModel(ndb.Model):
     def get_by_id(cls, obj1):
         # like this we always use the key in safeurl
         k1 = obj1.key.safeurl() if hasattr(obj1, 'key') else obj1
-        return ndb.Key(urlsafe=k1).get()
+        try:
+            return ndb.Key(urlsafe=k1).get()
+        except:
+            return None
+
+    def to_dict(self):
+        result = super(GCModel, self).to_dict()
+        result['id'] = self.id
+        return result
 
 
 class GCModelMtoMNoRep(GCModel):
@@ -58,14 +67,16 @@ class GCModelMtoMNoRep(GCModel):
         return ((n + m) * (n + m + 1) / 2) + n
 
     @classmethod
-    def build_id(cls, key1, key2):
-        return "%s|%s" % (key1.urlsafe(), key2.urlsafe())
+    def build_id(cls, obj1, obj2):
+        k1 = obj1.key if hasattr(obj1, 'key') else obj1
+        k2 = obj2.key if hasattr(obj2, 'key') else obj2
+        return "%s|%s" % (k1.urlsafe(), k2.urlsafe())
 
     @classmethod
     def get_by_id(cls, obj1, obj2):
-        k1 = obj1.key if hasattr(obj1, 'key') else obj1
-        k2 = obj2.key if hasattr(obj2, 'key') else obj2
-        return ndb.Key(cls, cls.build_id(k1, k2)).get()
+        # k1 = obj1.key if hasattr(obj1, 'key') else obj1
+        # k2 = obj2.key if hasattr(obj2, 'key') else obj2
+        return ndb.Key(cls, cls.build_id(obj1, obj2)).get()
 
 
 class GCUser(GCModel, User):

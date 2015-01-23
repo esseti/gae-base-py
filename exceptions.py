@@ -17,6 +17,15 @@ class BadRequest(GCAPIException):
     code = 400
 
 
+class BadParameters(GCAPIException):
+    code = httplib.BAD_REQUEST
+    __ERROR_MISSING = "Bad parameters: %s "
+
+    def __init__(self, field):
+        Exception.__init__(self)
+        self.args = (self.__ERROR_MISSING % field,)
+
+
 class NotFoundException(GCAPIException):
     code = httplib.NOT_FOUND
     __ERROR_MISSING = "Not found"
@@ -54,3 +63,12 @@ class AuthenticationError(GCAPIException):
         else:
             self.args = ("Authentication Error",)
 
+
+class ServerError(GCServerException):
+    code = 500
+
+    def __init__(self, message=None):
+        if message:
+            self.args = ("Server Error: " + message,)
+        else:
+            self.args = ("Server Error",)

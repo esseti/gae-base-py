@@ -29,7 +29,7 @@ class WSGIApp(webapp2.WSGIApplication):
         resp = webapp2.Response(content_type='application/json', charset='UTF-8')
         # if request.method == 'OPTIONS':
         # # CORS pre-flight request
-        #     resp.headers.update({
+        #     resp.auth_headers.update({
         #     'Access-Control-Allow-Credentials': 'true',
         #     'Access-Control-Allow-Origin': origin,
         #             'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
@@ -59,7 +59,7 @@ class WSGIApp(webapp2.WSGIApplication):
             # if request.get('cache') and request.method in ('GET', 'OPTIONS'):
             #     exp_date = datetime.utcnow() + timedelta(seconds=cfg.API_CACHE_MAX_AGE)
             #     cache_ctrl = 'max-age=%d, must-revalidate' % cfg.API_CACHE_MAX_AGE
-            #     resp.headers.update({
+            #     resp.auth_headers.update({
             #         'Cache-Control': cache_ctrl,
             #         'Expires': exp_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
             #     })
