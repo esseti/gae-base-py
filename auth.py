@@ -9,6 +9,9 @@ from webapp2_extras.securecookie import SecureCookieSerializer
 import cfg
 from gymcentral.exceptions import AuthenticationError
 
+
+
+
 # TODO: change this to your app.
 import models
 
@@ -62,7 +65,7 @@ class GCAuth():
         # # in case it's test. use remote user.
         # if 'REMOTE_USER' in req.environ and cls.__config_file.DEBUG:
         # token = req.environ['REMOTE_USER']
-        #     uid, ut = token.split("Token")[1].split("|")
+        # uid, ut = token.split("Token")[1].split("|")
         # even if in test, but the remote user is not found. then...
         if not uid and not ut:
             scs = SecureCookieSerializer(cls.__config_file.API_APP_CFG[cls.__app_name]['SECRET_KEY'])
@@ -76,13 +79,10 @@ class GCAuth():
                 else:
                     return None
         if uid and ut:
-            user, timestamp = cls.__user_model.get_by_auth_token(long(uid), ut)
-            if long(user.get_id()) == long(uid):
-                return user
-            else:
-                return None
-        else:
-            return None
+
+            if cls.__user_model.validate_auth_token(long(uid), ut):
+                return cls.__user_model.get_by_auth_token(long(uid),ut)[0]
+        return None
 
     @classmethod
     def get_user(cls, req):
