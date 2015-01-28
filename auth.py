@@ -1,5 +1,4 @@
 import json
-import logging
 from urllib import urlencode
 import urllib2
 
@@ -7,13 +6,20 @@ from google.appengine.api import urlfetch
 from webapp2_extras.securecookie import SecureCookieSerializer
 
 import cfg
-from gymcentral.exceptions import AuthenticationError
+from gymcentral.exceptions import AuthenticationError, NotFoundException
+
+
+
+
+
+
 
 
 
 
 # TODO: change this to your app.
 import models
+from models import Club, ClubMembership, Course, CourseSubscription, CourseTrainers
 
 
 __author__ = 'stefano'
@@ -79,9 +85,15 @@ class GCAuth():
                 else:
                     return None
         if uid and ut:
-
+            # user = memcache.get("%s|%s" % (uid, ut))
+            # if user:
+            # return user
+            # else:
             if cls.__user_model.validate_auth_token(long(uid), ut):
-                return cls.__user_model.get_by_auth_token(long(uid),ut)[0]
+                user = cls.__user_model.get_by_auth_token(long(uid), ut)[0]
+                return user
+                # store in memcace for 1 week
+                # memcache.set("%s|%s" % (uid, ut), user, time=60 * 24 * 7)
         return None
 
     @classmethod
@@ -121,13 +133,14 @@ class GCAuth():
             return None, None, 'invalid provider'
 
 
+# TODO add wrapper to check if user is member and of what type
+
 def user_required(handler):
     """
     Wrapper to check that auth is done
     :param handler:
     :return:
     """
-
     def wrapper(req, *args, **kwargs):
         user = GCAuth.get_user(req)
         if user is None:
@@ -136,6 +149,3 @@ def user_required(handler):
         return handler(req, *args, **kwargs)
 
     return wrapper
-
-
-
