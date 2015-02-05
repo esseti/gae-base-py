@@ -55,7 +55,7 @@ class WSGIApp(webapp2.WSGIApplication):
             # if request.get('cache') and request.method in ('GET', 'OPTIONS'):
             # exp_date = datetime.utcnow() + timedelta(seconds=cfg.API_CACHE_MAX_AGE)
             # cache_ctrl = 'max-age=%d, must-revalidate' % cfg.API_CACHE_MAX_AGE
-            #     resp.auth_headers.update({
+            # resp.auth_headers.update({
             #         'Cache-Control': cache_ctrl,
             #         'Expires': exp_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
             #     })
@@ -73,21 +73,25 @@ class WSGIApp(webapp2.WSGIApplication):
             else:
                 resp.status = 400
             msg = str(ex)
-            if cfg.DEBUG:
-                logging.exception(ex)
-            elif msg:
-                logging.error(msg)
+            # if cfg.DEBUG:
+            logging.exception(ex)
+            # elif msg:
+            #     logging.error(msg)
             add_args = []
             if hasattr(ex, 'field'):
                 add_args.append(('field', ex.field))
             json.dump(error(msg, code=resp.status_int, add_args=add_args), resp)
         except Exception as e:
+            if hasattr(e, 'code'):
+                resp.status = e.code
+            else:
+                resp.status = 500
             # for other execptions, return 500 error and log it internally
             msg = str(e)
-            if cfg.DEBUG:
-                logging.exception(msg)
-            elif msg:
-                logging.error(msg)
+            # if cfg.DEBUG:
+            logging.exception(msg)
+            # elif msg:
+            #     logging.error(msg)
             add_args = [('exception_message', msg)]
             json.dump(error("Internal Server Error", code=500, add_args=add_args), resp)
         return resp

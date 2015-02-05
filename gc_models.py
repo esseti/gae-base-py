@@ -52,6 +52,10 @@ class GCModel(ndb.Model):
     def to_dict(self):
         result = super(GCModel, self).to_dict()
         result['id'] = self.id
+        # this set to null the empty strings
+        for key, value in result.iteritems():
+            if isinstance(value, basestring) and not value:
+                result[key] = None
         return result
 
 
@@ -74,8 +78,8 @@ class GCModelMtoMNoRep(GCModel):
 
     @classmethod
     def get_by_id(cls, obj1, obj2):
-        # k1 = obj1.key if hasattr(obj1, 'key') else obj1
-        # k2 = obj2.key if hasattr(obj2, 'key') else obj2
+        k1 = obj1.key if hasattr(obj1, 'key') else obj1
+        k2 = obj2.key if hasattr(obj2, 'key') else obj2
         return ndb.Key(cls, cls.build_id(obj1, obj2)).get()
 
 

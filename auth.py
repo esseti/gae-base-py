@@ -19,7 +19,6 @@ from gymcentral.exceptions import AuthenticationError, NotFoundException
 
 # TODO: change this to your app.
 import models
-from models import Club, ClubMembership, Course, CourseSubscription, CourseTrainers
 
 
 __author__ = 'stefano'
@@ -39,7 +38,7 @@ class GCAuth():
     @classmethod
     def get_secure_cookie(cls, token):
         scs = SecureCookieSerializer(cls.__config_file.API_APP_CFG[cls.__app_name]['SECRET_KEY'])
-        token = scs.serialize('token', token)
+        token = scs.serialize('Token', token)
         return token
 
     @classmethod
@@ -74,14 +73,20 @@ class GCAuth():
         # uid, ut = token.split("Token")[1].split("|")
         # even if in test, but the remote user is not found. then...
         if not uid and not ut:
-            scs = SecureCookieSerializer(cls.__config_file.API_APP_CFG[cls.__app_name]['SECRET_KEY'])
-            token = req.cookies.get('gc_token')
+            token = req.headers.get("Authorization")
             if token:
-                uid, ut = scs.deserialize('token', token).split("|")
+                ret_token = token.split("Token")[1]
+                if not ret_token:
+                    return None
+                uid, ut = ret_token.split("|")
             else:
-                token = req.headers.get("Authorization")
+                scs = SecureCookieSerializer(cls.__config_file.API_APP_CFG[cls.__app_name]['SECRET_KEY'])
+                token = req.cookies.get('gc_token')
                 if token:
-                    uid, ut = token.split("Token")[1].split("|")
+                    token_des = scs.deserialize('Token', token)
+                    if not token_des:
+                        return None
+                    uid, ut = token_des.split("|")
                 else:
                     return None
         if uid and ut:

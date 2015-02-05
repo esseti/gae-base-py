@@ -8,7 +8,7 @@ from google.appengine.ext import ndb
 from google.appengine.ext import blobstore
 
 from gymcentral.exceptions import BadRequest, MissingParameters
-
+import re
 
 __author__ = 'stefano'
 
@@ -46,6 +46,16 @@ def sanitize_list(data, allowed=[], hidden=[]):
         ret.append(sanitize_json(d, allowed, hidden))
     return ret
 
+def __snake_string(snake_str):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', snake_str)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+
+def __snake_case(d):
+    snake_camel = {}
+    for e in d:
+        snake_camel[__snake_string(e)] = d[e]
+    return snake_camel
 
 def __camel_string(snake_str):
     '''
@@ -108,7 +118,7 @@ def json_from_paginated_request(req, pars=()):
     :return:
     '''
     # if it's found then the value, otherwise the default
-    __items = (('page', 1), ('size', -1)) + pars
+    __items = (('page', 0), ('size', -1)) + pars
     ret = {}
     for item in __items:
         ret[item[0]] = req.get(item[0], item[1])
@@ -127,7 +137,8 @@ def json_from_request(req, *allowed_props):
             data = json.loads(req.body)
             if allowed_props:
                 sanitize_json(data, allowed=allowed_props)
-            return data
+            # transform camelCase to snake_case
+            return __snake_case(data)
         except (TypeError, ValueError) as e:
             logging.error(e)
             raise BadRequest("Invalid JSON")
