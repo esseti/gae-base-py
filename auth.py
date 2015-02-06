@@ -1,12 +1,13 @@
 import json
 from urllib import urlencode
 import urllib2
+from decorator import decorator
 
 from google.appengine.api import urlfetch
 from webapp2_extras.securecookie import SecureCookieSerializer
 
 import cfg
-from gymcentral.exceptions import AuthenticationError, NotFoundException
+from gymcentral.exceptions import AuthenticationError
 
 
 
@@ -49,6 +50,7 @@ class GCAuth():
     def auth_user_token(cls, user):
         """
         get the token of the current user
+
         :param user
         :return: token
         """
@@ -60,7 +62,8 @@ class GCAuth():
     @classmethod
     def get_user_or_none(cls, req):
         """
-        actual method that return the user or None
+        actual method that return the user or ``None``
+
         :param req:
         :return:
         """
@@ -105,6 +108,7 @@ class GCAuth():
     def get_user(cls, req):
         """
         Get the user from the authorization.
+
         :return: the user or None
         """
         user = cls.get_user_or_none(req)
@@ -118,6 +122,7 @@ class GCAuth():
     def handle_oauth_callback(access_token, provider):
         '''
         this function takes teh access_token and the provider and return the dictionary of the user
+
         :param access_token:
         :param provider:
         :return: a triple: the user data, the acess_token, and the error message (if any)
@@ -139,12 +144,13 @@ class GCAuth():
 
 
 # TODO add wrapper to check if user is member and of what type
-
+@decorator
 def user_required(handler):
     """
-    Wrapper to check that auth is done
+    Decorator to check that user is logged in via Authorization Token
+
     :param handler:
-    :return:
+    :return: ``User`` or ``None``
     """
     def wrapper(req, *args, **kwargs):
         user = GCAuth.get_user(req)
