@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import json
 import logging
 
@@ -5,12 +6,14 @@ import webapp2
 
 import cfg
 from gymcentral.exceptions import GCAPIException
-from gymcentral.gc_utils import json_serializer, error
+from gymcentral.gc_utils import json_serializer, error, camel_case
 
 
 __author__ = 'stefano'
 # credits go to Alex Vagin
 
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger('myLogger')
 
 class WSGIApp(webapp2.WSGIApplication):
     def __init__(self, *args, **kwargs):
@@ -19,11 +22,11 @@ class WSGIApp(webapp2.WSGIApplication):
 
     @staticmethod
     def edit_request(router, request, response):
-        return router
+        return request
 
     @staticmethod
     def edit_response(rv):
-        return rv
+        return camel_case(rv)
 
     @staticmethod
     def custom_dispatcher(router, request, response):
@@ -31,6 +34,15 @@ class WSGIApp(webapp2.WSGIApplication):
         origin = request.headers.get('origin', '*')
 
         resp = webapp2.Response(content_type='application/json', charset='UTF-8')
+        if request.method == 'OPTIONS':
+        # CORS pre-flight request
+            resp.headers.update({'Access-Control-Allow-Credentials': 'true',
+                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+                'Access-Control-Allow-Headers': ('accept, origin, content-type, '
+                                                 'x-requested-with, cookie'),
+                'Access-Control-Max-Age': str(cfg.AUTH_TOKEN_MAX_AGE)})
+            return resp
 
         try:
             # this automatically loads the object that is passed with the id.
@@ -48,24 +60,20 @@ class WSGIApp(webapp2.WSGIApplication):
                 code, rv = rv
                 resp.status = code
             if rv is not None:
-                json.dump(rv, resp, default=json_serializer)
+                json.dump(rv, resp,  default=json_serializer)
 
             # cache response if requested and possible
-            # STE: i don't get this as well
-            # if request.get('cache') and request.method in ('GET', 'OPTIONS'):
-            # exp_date = datetime.utcnow() + timedelta(seconds=cfg.API_CACHE_MAX_AGE)
-            # cache_ctrl = 'max-age=%d, must-revalidate' % cfg.API_CACHE_MAX_AGE
-            # resp.auth_headers.update({
-            #         'Cache-Control': cache_ctrl,
-            #         'Expires': exp_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
-            #     })
+            if request.get('cache') and request.method in ('GET', 'OPTIONS'):
+                exp_date = datetime.utcnow() + timedelta(seconds=cfg.API_CACHE_MAX_AGE)
+                cache_ctrl = 'max-age=%d, must-revalidate' % cfg.API_CACHE_MAX_AGE
+                resp.headers.update({
+                        'Cache-Control': cache_ctrl,
+                        'Expires': exp_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
+                })
 
             resp.headers.update({
                 'Access-Control-Allow-Origin': origin,
                 'Access-Control-Allow-Credentials': 'true'})
-
-
-
 
         except GCAPIException as ex:
             if hasattr(ex, 'code'):
@@ -73,10 +81,10 @@ class WSGIApp(webapp2.WSGIApplication):
             else:
                 resp.status = 400
             msg = str(ex)
-            # if cfg.DEBUG:
-            logging.exception(ex)
-            # elif msg:
-            #     logging.error(msg)
+            if cfg.DEBUG:
+                logging.exception(ex)
+            elif msg:
+                logging.error(msg)
             add_args = []
             if hasattr(ex, 'field'):
                 add_args.append(('field', ex.field))
@@ -88,10 +96,10 @@ class WSGIApp(webapp2.WSGIApplication):
                 resp.status = 500
             # for other execptions, return 500 error and log it internally
             msg = str(e)
-            # if cfg.DEBUG:
-            logging.exception(msg)
-            # elif msg:
-            #     logging.error(msg)
+            if cfg.DEBUG:
+                logging.exception(msg)
+            elif msg:
+                logging.error(msg)
             add_args = [('exception_message', msg)]
             json.dump(error("Internal Server Error", code=500, add_args=add_args), resp)
         return resp

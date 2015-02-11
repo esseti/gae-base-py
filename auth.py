@@ -1,13 +1,23 @@
 import json
 from urllib import urlencode
 import urllib2
-from decorator import decorator
-
 from google.appengine.api import urlfetch
 from webapp2_extras.securecookie import SecureCookieSerializer
 
+# be careful with these imports, you may not have them.
 import cfg
 from gymcentral.exceptions import AuthenticationError
+
+# this beacuse the decorator is needed to create the docs but not to run the project
+# http://stackoverflow.com/questions/3687046/python-sphinx-autodoc-and-decorated-members
+try:
+    from decorator import decorator
+except ImportError:
+    # No decorator package available. Create a no-op "decorator".
+    def decorator(f):
+        return f
+
+
 
 
 

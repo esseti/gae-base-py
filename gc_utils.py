@@ -1,18 +1,24 @@
 __author__ = 'stefano'
 import logging
+import logging.config
 import json
 from datetime import datetime
 import time
+import re
 
 from google.appengine.ext import ndb
+
 from google.appengine.ext import blobstore
 
 from gymcentral.exceptions import BadRequest, MissingParameters
-import re
+
 
 __author__ = 'stefano'
 
 _DEFAULT_ERROR_MSG = 'An error occurred while processing this request'
+
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger('myLogger')
 
 
 def error(msg, code=400, add_args=[]):
@@ -46,6 +52,7 @@ def sanitize_list(data, allowed=[], hidden=[]):
         ret.append(sanitize_json(d, allowed, hidden))
     return ret
 
+
 def __snake_string(snake_str):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', snake_str)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
@@ -56,6 +63,7 @@ def __snake_case(d):
     for e in d:
         snake_camel[__snake_string(e)] = d[e]
     return snake_camel
+
 
 def __camel_string(snake_str):
     '''
@@ -68,16 +76,36 @@ def __camel_string(snake_str):
     return components[0] + "".join(x.title() for x in components[1:])
 
 
-def __camel_case(d):
+def __camel_list(l):
+    res = []
+    for el in l:
+        res.append(camel_case(el))
+    return res
+
+
+def __camel_dict(d):
+    res = {}
+    for e in d:
+        res[__camel_string(e)] = camel_case(d[e])
+    return res
+
+
+def camel_case(d):
     '''
     utils to transform the dictionary fields from snake to camel case
     :param d:
     :return:
     '''
-    ret_camel = {}
-    for e in d:
-        ret_camel[__camel_string(e)] = d[e]
-    return ret_camel
+    # ret_camel = {}
+    if isinstance(d, list):
+        return __camel_list(d)
+    elif isinstance(d, dict):
+        return __camel_dict(d)
+    elif isinstance(d, ndb.Model):
+        # this happens when there's structured properties..
+        return __camel_dict(d.to_dict())
+    else:
+        return d
 
 
 def sanitize_json(data, allowed=[], hidden=[]):
@@ -104,7 +132,6 @@ def sanitize_json(data, allowed=[], hidden=[]):
         if rem in ret:
             del ret[rem]
     # convert to camel case to be compiant with Json standard
-    ret = __camel_case(ret)
     return ret
 
 

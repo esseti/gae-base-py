@@ -1,10 +1,18 @@
+from datetime import datetime
+import logging
+import logging.config
+
 from google.appengine.ext import ndb
-from webapp2_extras.appengine.auth.models import User
+from google.appengine.ext.ndb import model
+from webapp2_extras.appengine.auth.models import User, UserToken
 
 from gymcentral.exceptions import ValidationError
 
 
 __author__ = 'stefano'
+
+logging.config.fileConfig('logging.conf')
+logger = logging.getLogger('myLogger')
 
 
 class GCModel(ndb.Model):
@@ -83,6 +91,27 @@ class GCModelMtoMNoRep(GCModel):
         return ndb.Key(cls, cls.build_id(obj1, obj2)).get()
 
 
+class GCUserToken(UserToken):
+    # add this field as indexed
+    user = model.StringProperty(required=True)
+
+
 class GCUser(GCModel, User):
-    def is_valid(self):
-        return True
+    # new models
+    token_model = GCUserToken
+
+    @classmethod
+    def create_auth_token(cls, user_id):
+        """
+        Create the token if None exists, otherwise provides back one that exists
+
+        :param user_id: the user id
+        :return: the token
+        """
+        token = cls.token_model.query(cls.token_model.user == str(user_id)).get()
+        if token:
+            token.updated = datetime.now()
+            token.put()
+            return token.token
+        else:
+            return cls.token_model.create(user_id, "auth").token
