@@ -6,16 +6,18 @@ from webapp2_extras.securecookie import SecureCookieSerializer
 
 # be careful with these imports, you may not have them.
 import cfg
-from gymcentral.exceptions import AuthenticationError
+from gymcentral.exceptions import AuthenticationError, BadParameters
 
 # this beacuse the decorator is needed to create the docs but not to run the project
 # http://stackoverflow.com/questions/3687046/python-sphinx-autodoc-and-decorated-members
-try:
-    from decorator import decorator
-except ImportError:
+# try:
+#     from decorator import decorator
+#     print "ok"
+# except ImportError:
+#     print "no"
     # No decorator package available. Create a no-op "decorator".
-    def decorator(f):
-        return f
+    # def decorator(f):
+    #     return f
 
 
 
@@ -135,26 +137,33 @@ class GCAuth():
 
         :param access_token:
         :param provider:
-        :return: a triple: the user data, the acess_token, and the error message (if any)
+        :return: a triple: the user data, the access_token, and the error message (if any)
         '''
 
         if provider == 'facebook':
-            url = "https://graph.facebook.com/me?access_token=" + access_token
-            return json.loads(urllib2.urlopen(url).read()), access_token, None
+            url = "https://graph.facebook.com/me?{0}"
+            target_url = url.format(urlencode({'access_token': access_token}))
+            fetch = urlfetch.fetch(target_url)
+            if not (200 <= fetch.status_code < 300):
+                return None, None, json.loads(fetch.content)['error']['message']
+            return json.loads(fetch.content), access_token, None
         elif provider == 'google':
             url = 'https://www.googleapis.com/oauth2/v3/userinfo?{0}'
             target_url = url.format(urlencode({'access_token': access_token}))
-            resp = urlfetch.fetch(target_url).content
-            user_data = json.loads(resp)
+            fetch = urlfetch.fetch(target_url)
+            if not (200 <= fetch.status_code < 300):
+                return None, None, json.loads(fetch.content)['error_description']
+            user_data = json.loads(fetch.content)
+
             if 'id' not in user_data and 'sub' in user_data:
                 user_data['id'] = user_data['sub']
             return user_data, access_token, None
         else:
-            return None, None, 'invalid provider'
+            return None, None, 'Invalid provider'
 
 
-# TODO add wrapper to check if user is member and of what type
-@decorator
+
+# @decorator
 def user_required(handler):
     """
     Decorator to check that user is logged in via Authorization Token
@@ -168,5 +177,4 @@ def user_required(handler):
             raise AuthenticationError
         req.user = user
         return handler(req, *args, **kwargs)
-
     return wrapper

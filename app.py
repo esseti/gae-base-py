@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
 import json
 import logging
-
+import logging.config
 import webapp2
 
 import cfg
 from gymcentral.exceptions import GCAPIException
-from gymcentral.gc_utils import json_serializer, error, camel_case
+from gymcentral.gc_utils import json_serializer, error
+from gymcentral.http_codes import GCHttpCode
 
 
 __author__ = 'stefano'
@@ -14,6 +15,7 @@ __author__ = 'stefano'
 
 logging.config.fileConfig('logging.conf')
 logger = logging.getLogger('myLogger')
+
 
 class WSGIApp(webapp2.WSGIApplication):
     def __init__(self, *args, **kwargs):
@@ -26,7 +28,7 @@ class WSGIApp(webapp2.WSGIApplication):
 
     @staticmethod
     def edit_response(rv):
-        return camel_case(rv)
+        return rv
 
     @staticmethod
     def custom_dispatcher(router, request, response):
@@ -35,18 +37,16 @@ class WSGIApp(webapp2.WSGIApplication):
 
         resp = webapp2.Response(content_type='application/json', charset='UTF-8')
         if request.method == 'OPTIONS':
-        # CORS pre-flight request
+            # CORS pre-flight request
             resp.headers.update({'Access-Control-Allow-Credentials': 'true',
-                'Access-Control-Allow-Origin': origin,
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
-                'Access-Control-Allow-Headers': ('accept, origin, content-type, '
-                                                 'x-requested-with, cookie'),
-                'Access-Control-Max-Age': str(cfg.AUTH_TOKEN_MAX_AGE)})
+                                 'Access-Control-Allow-Origin': origin,
+                                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+                                 'Access-Control-Allow-Headers': ('accept, origin, content-type, '
+                                                                  'x-requested-with, cookie'),
+                                 'Access-Control-Max-Age': str(cfg.AUTH_TOKEN_MAX_AGE)})
             return resp
 
         try:
-            # this automatically loads the object that is passed with the id.
-            # it works only in ndb and if the id is == key.urlsafe.
             app = webapp2.get_app()
             request = app.edit_request(router, request, response)
             rv = router.default_dispatcher(request, response)
@@ -54,21 +54,24 @@ class WSGIApp(webapp2.WSGIApplication):
             if isinstance(rv, webapp2.Response):
                 return rv
 
+            if isinstance(rv, GCHttpCode):
+                resp.status = rv.code
+                rv = rv.message
 
             # STE: in case we want to specify the code
             if isinstance(rv, tuple):
                 code, rv = rv
                 resp.status = code
             if rv is not None:
-                json.dump(rv, resp,  default=json_serializer)
+                json.dump(rv, resp, default=json_serializer)
 
             # cache response if requested and possible
             if request.get('cache') and request.method in ('GET', 'OPTIONS'):
                 exp_date = datetime.utcnow() + timedelta(seconds=cfg.API_CACHE_MAX_AGE)
                 cache_ctrl = 'max-age=%d, must-revalidate' % cfg.API_CACHE_MAX_AGE
                 resp.headers.update({
-                        'Cache-Control': cache_ctrl,
-                        'Expires': exp_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
+                    'Cache-Control': cache_ctrl,
+                    'Expires': exp_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
                 })
 
             resp.headers.update({

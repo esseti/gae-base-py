@@ -1,7 +1,8 @@
+import json
+
 __author__ = 'stefano'
 import logging
 import logging.config
-import json
 from datetime import datetime
 import time
 import re
@@ -24,6 +25,7 @@ logger = logging.getLogger('myLogger')
 def error(msg, code=400, add_args=[]):
     """
     renders the execption
+
     :param msg: the message
     :param code: the status code
     :param add_args: additonal arguments added to the error message
@@ -42,6 +44,7 @@ def error(msg, code=400, add_args=[]):
 def sanitize_list(data, allowed=[], hidden=[]):
     '''
     Takes a list in input and returns a list of dict that contains only allowed fields, hiding the  the hidden fields
+
     :param data: the list
     :param allowed: the list of allowed fields
     :param hidden: the list of fields to hide
@@ -68,7 +71,9 @@ def __snake_case(d):
 def __camel_string(snake_str):
     '''
     convert snake string to camelString
+
     e.g., hello_world -> helloWorld
+
     :param snake_str: the snake string
     :return: the camleString
     '''
@@ -93,6 +98,7 @@ def __camel_dict(d):
 def camel_case(d):
     '''
     utils to transform the dictionary fields from snake to camel case
+
     :param d:
     :return:
     '''
@@ -111,6 +117,7 @@ def camel_case(d):
 def sanitize_json(data, allowed=[], hidden=[]):
     '''
     Takes a dict or a Model in input and returns a dict  that contains only allowed fields, hiding the  the hidden fields
+
     :param data: the dict
     :param allowed: the allowed fields
     :param hidden: the list of fields to hide
@@ -140,6 +147,7 @@ def json_from_paginated_request(req, pars=()):
     Takes the request in input and creates a dictionary that contains:
     - the parameters for paginated requests.
     - additional parameters specified by the developer as list of tuples: name, default_value.
+
     :param req: the request object
     :param pars: additional parameters as list of tuples
     :return:
@@ -148,27 +156,55 @@ def json_from_paginated_request(req, pars=()):
     __items = (('page', 0), ('size', -1)) + pars
     ret = {}
     for item in __items:
-        ret[item[0]] = req.get(item[0], item[1])
+        if isinstance(item, tuple):
+            name, value = item
+        else:
+            name, value = item, None
+        ret[name] = req.get(name, value)
     return ret
 
 
-def json_from_request(req, *allowed_props):
+def json_from_request(req, mandatory_props=None, optional_props=None, accept_all=False):
     '''
-    Takes in input the request and creates a dict that contains the allowed properties.
+    Takes in input the request and creates a dict that contains the mandatory and optional properties.
+
     :param req: the request object
-    :param allowed_props: list of properties that the object has to contain.
+    :param mandatory_props: list of mandatory properties that the object HAS to contain.
+    :param optional_props: list of optional properties that the object MAY  contain. Each item can be a
+    tuple of name and default value e.g., ("myList",[]). *NB:* if the value is
+    ``None the properties will NOT be added to the dict``
+    :param accept_all: if ``True`` the request will accept any kind of input,
+    yet check on mandatory and optional will be performed
     :return: json object
     '''
     if req.body:
+        d = req.body
         try:
-            data = json.loads(req.body)
-            if allowed_props:
-                sanitize_json(data, allowed=allowed_props)
-            # transform camelCase to snake_case
-            return __snake_case(data)
+            j_req = json.loads(d)
         except (TypeError, ValueError) as e:
-            logging.error(e)
             raise BadRequest("Invalid JSON")
+        if accept_all:
+                data = j_req
+        else:
+            data = dict()
+        if mandatory_props:
+            for mandatory in mandatory_props:
+                value = j_req.get(mandatory, None)
+                if not value:
+                    raise MissingParameters(mandatory)
+                else:
+                    data[mandatory] = value
+        if optional_props:
+            for optional in optional_props:
+                if isinstance(optional, tuple):
+                    name, value = optional
+                else:
+                    name, value = optional, None
+                get_value = j_req.get(name, value)
+                if get_value is not None:
+                    data[name]=get_value
+        return __snake_case(data)
+
     else:
         return {}
 
@@ -182,6 +218,7 @@ def json_serializer(obj):
     '''
     # NOTE: this is also called when the app dumps the json, so be careful when editing
     # @propery are not rendered
+    print "%s %s" % (obj, type(obj))
     if isinstance(obj, datetime):
         return int(time.mktime(obj.utctimetuple()) * 1e3 + obj.microsecond / 1e3)
     elif isinstance(obj, ndb.Key):
