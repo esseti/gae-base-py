@@ -10,14 +10,11 @@ from gymcentral.exceptions import AuthenticationError, BadParameters
 
 # this beacuse the decorator is needed to create the docs but not to run the project
 # http://stackoverflow.com/questions/3687046/python-sphinx-autodoc-and-decorated-members
-# try:
-#     from decorator import decorator
-#     print "ok"
-# except ImportError:
-#     print "no"
-    # No decorator package available. Create a no-op "decorator".
-    # def decorator(f):
-    #     return f
+try:
+    from decorator import decorator
+except ImportError:
+    def decorator(f):
+        return f
 
 
 
@@ -163,7 +160,7 @@ class GCAuth():
 
 
 
-# @decorator
+@decorator
 def user_required(handler):
     """
     Decorator to check that user is logged in via Authorization Token

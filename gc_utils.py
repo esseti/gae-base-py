@@ -218,7 +218,6 @@ def json_serializer(obj):
     '''
     # NOTE: this is also called when the app dumps the json, so be careful when editing
     # @propery are not rendered
-    print "%s %s" % (obj, type(obj))
     if isinstance(obj, datetime):
         return int(time.mktime(obj.utctimetuple()) * 1e3 + obj.microsecond / 1e3)
     elif isinstance(obj, ndb.Key):
