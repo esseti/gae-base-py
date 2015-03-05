@@ -6,7 +6,7 @@ from webapp2_extras.securecookie import SecureCookieSerializer
 
 # be careful with these imports, you may not have them.
 import cfg
-from gymcentral.exceptions import AuthenticationError, BadParameters
+from exceptions import AuthenticationError, BadParameters
 
 # this beacuse the decorator is needed to create the docs but not to run the project
 # http://stackoverflow.com/questions/3687046/python-sphinx-autodoc-and-decorated-members
@@ -15,7 +15,6 @@ try:
 except ImportError:
     def decorator(f):
         return f
-
 
 
 
@@ -160,7 +159,7 @@ class GCAuth():
 
 
 
-@decorator
+# @decorator
 def user_required(handler):
     """
     Decorator to check that user is logged in via Authorization Token

@@ -11,4 +11,6 @@ class HttpCreated(GCHttpCode):
 
 
 class HttpEmpty(GCHttpCode):
-    code = 204
+
+    def __init__(self):
+        self.code = 204

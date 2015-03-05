@@ -6,13 +6,10 @@ from google.appengine.ext import ndb
 from google.appengine.ext.ndb import model
 from webapp2_extras.appengine.auth.models import User, UserToken
 
-from gymcentral.exceptions import ValidationError
+from exceptions import ValidationError
 
 
 __author__ = 'stefano'
-
-logging.config.fileConfig('logging.conf')
-logger = logging.getLogger('myLogger')
 
 
 class GCModel(ndb.Model):

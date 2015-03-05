@@ -47,7 +47,7 @@ class ValidationError(GCAPIException):
 
 class MissingParameters(GCAPIException):
     code = httplib.BAD_REQUEST
-    __ERROR_MISSING = "The field '%s' is missing"
+    __ERROR_MISSING = "The field '%s' is/are missing"
 
     def __init__(self, field):
         Exception.__init__(self)

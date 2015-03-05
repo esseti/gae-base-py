@@ -1,8 +1,6 @@
 import json
 
 __author__ = 'stefano'
-import logging
-import logging.config
 from datetime import datetime
 import time
 import re
@@ -11,15 +9,10 @@ from google.appengine.ext import ndb
 
 from google.appengine.ext import blobstore
 
-from gymcentral.exceptions import BadRequest, MissingParameters
+from exceptions import BadRequest, MissingParameters
 
-
-__author__ = 'stefano'
 
 _DEFAULT_ERROR_MSG = 'An error occurred while processing this request'
-
-logging.config.fileConfig('logging.conf')
-logger = logging.getLogger('myLogger')
 
 
 def error(msg, code=400, add_args=[]):
@@ -184,7 +177,7 @@ def json_from_request(req, mandatory_props=None, optional_props=None, accept_all
         except (TypeError, ValueError) as e:
             raise BadRequest("Invalid JSON")
         if accept_all:
-                data = j_req
+            data = j_req
         else:
             data = dict()
         if mandatory_props:
@@ -198,15 +191,23 @@ def json_from_request(req, mandatory_props=None, optional_props=None, accept_all
             for optional in optional_props:
                 if isinstance(optional, tuple):
                     name, value = optional
+                    get_value = j_req.get(name, value)
+                    # if default value i None then we set as None
+                    data[name] = get_value
                 else:
                     name, value = optional, None
-                get_value = j_req.get(name, value)
-                if get_value is not None:
-                    data[name]=get_value
+                    get_value = j_req.get(name, value)
+                    # if there's no default value we set only if exists
+                    if get_value is not None:
+                        data[name] = get_value
+
         return __snake_case(data)
 
     else:
-        return {}
+        if mandatory_props:
+            raise MissingParameters(", ".join(mandatory_props))
+        else:
+            return {}
 
 
 def json_serializer(obj):

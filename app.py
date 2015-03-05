@@ -2,19 +2,17 @@ from datetime import datetime, timedelta
 import json
 import logging
 import logging.config
+
 import webapp2
 
 import cfg
-from gymcentral.exceptions import GCAPIException
-from gymcentral.gc_utils import json_serializer, error
-from gymcentral.http_codes import GCHttpCode
+from exceptions import GCAPIException
+from gc_utils import json_serializer, error
+from http_codes import GCHttpCode
 
 
 __author__ = 'stefano'
 # credits go to Alex Vagin
-
-logging.config.fileConfig('logging.conf')
-logger = logging.getLogger('myLogger')
 
 
 class WSGIApp(webapp2.WSGIApplication):
@@ -56,6 +54,8 @@ class WSGIApp(webapp2.WSGIApplication):
 
             if isinstance(rv, GCHttpCode):
                 resp.status = rv.code
+                if rv.code == 204:
+                    resp.content_type = None
                 rv = rv.message
 
             # STE: in case we want to specify the code
