@@ -28,7 +28,6 @@ class GCModel(ndb.Model):
         # logging.warning("is_valid() should be implemented. Class: %s .. returning TRUE", self._class_name())
         return True
 
-
     def put(self):
         """
         use this instead of put
@@ -63,6 +62,9 @@ class GCModel(ndb.Model):
                 result[key] = None
         return result
 
+    @property
+    def active(self):
+        return True
 
 class GCModelMtoMNoRep(GCModel):
     # this class is used for MtoM relationship.
