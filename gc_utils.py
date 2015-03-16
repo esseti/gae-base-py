@@ -107,7 +107,7 @@ def camel_case(d):
         return d
 
 
-def sanitize_json(data, allowed=[], hidden=[]):
+def sanitize_json(data, allowed=[], hidden=[], except_on_missing=True):
     '''
     Takes a dict or a Model in input and returns a dict  that contains only allowed fields, hiding the  the hidden fields
 
@@ -124,7 +124,8 @@ def sanitize_json(data, allowed=[], hidden=[]):
             if attr in data:
                 ret[attr] = data[attr]
             else:
-                raise MissingParameters(attr)
+                if except_on_missing:
+                    raise MissingParameters(attr)
     else:
         ret = data
     # even if allowed and hidden are specified this will work.
@@ -239,3 +240,6 @@ def json_serializer(obj):
 
 def date_to_js_timestamp(obj):
     return int(time.mktime(obj.utctimetuple()) * 1e3 + obj.now().microsecond / 1e3)
+
+def date_from_js_timestamp(obj):
+    return datetime.fromtimestamp(long(obj) / 1000)
