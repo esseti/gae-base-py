@@ -47,6 +47,7 @@ class WSGIApp(webapp2.WSGIApplication):
         try:
             app = webapp2.get_app()
             request = app.edit_request(router, request, response)
+
             rv = router.default_dispatcher(request, response)
             rv = app.edit_response(rv)
             if isinstance(rv, webapp2.Response):

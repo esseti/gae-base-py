@@ -57,7 +57,10 @@ def __snake_string(snake_str):
 def __snake_case(d):
     snake_camel = {}
     for e in d:
-        snake_camel[__snake_string(e)] = d[e]
+        if isinstance(d[e], dict):
+            snake_camel[__snake_string(e)] = __snake_case(d[e])
+        else:
+            snake_camel[__snake_string(e)] = d[e]
     return snake_camel
 
 
@@ -184,7 +187,7 @@ def json_from_request(req, mandatory_props=None, optional_props=None, accept_all
         if mandatory_props:
             for mandatory in mandatory_props:
                 value = j_req.get(mandatory, None)
-                if not value:
+                if value is None:
                     raise MissingParameters(mandatory)
                 else:
                     data[mandatory] = value
@@ -240,6 +243,7 @@ def json_serializer(obj):
 
 def date_to_js_timestamp(obj):
     return int(time.mktime(obj.utctimetuple()) * 1e3 + obj.now().microsecond / 1e3)
+
 
 def date_from_js_timestamp(obj):
     return datetime.fromtimestamp(long(obj) / 1000)

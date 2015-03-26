@@ -64,7 +64,10 @@ class GCModel(ndb.Model):
 
     @property
     def active(self):
-        return True
+        if hasattr(self,'is_active'):
+            return self.is_active
+        else:
+            return True
 
 class GCModelMtoMNoRep(GCModel):
     # this class is used for MtoM relationship.
