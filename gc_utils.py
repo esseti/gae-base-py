@@ -150,7 +150,7 @@ def json_from_paginated_request(req, pars=()):
     :return:
     '''
     # if it's found then the value, otherwise the default
-    __items = (('page', 0), ('size', -1)) + pars
+    __items = (('page', 0), ('size', -1), ('paginated', False)) + pars
     ret = {}
     for item in __items:
         if isinstance(item, tuple):
@@ -158,6 +158,11 @@ def json_from_paginated_request(req, pars=()):
         else:
             name, value = item, None
         ret[name] = req.get(name, value)
+    #     conversion
+    ret['page'] = int(ret['page'])
+    ret['size'] = int(ret['size'])
+    # beacuse in js this  is a string
+    ret['paginated'] = ret['paginated'] == 'true'
     return ret
 
 
@@ -224,7 +229,7 @@ def json_serializer(obj):
     # NOTE: this is also called when the app dumps the json, so be careful when editing
     # @propery are not rendered
     if isinstance(obj, datetime):
-        return int(time.mktime(obj.utctimetuple()) * 1e3 + obj.microsecond / 1e3)
+        return date_to_js_timestamp(obj)
     elif isinstance(obj, ndb.Key):
         return obj.urlsafe()
     elif isinstance(obj, blobstore.BlobKey):
@@ -242,7 +247,8 @@ def json_serializer(obj):
 
 
 def date_to_js_timestamp(obj):
-    return int(time.mktime(obj.utctimetuple()) * 1e3 + obj.now().microsecond / 1e3)
+    # return obj
+    return int(time.mktime(obj.timetuple()) * 1e3 + obj.now().microsecond / 1e3)
 
 
 def date_from_js_timestamp(obj):

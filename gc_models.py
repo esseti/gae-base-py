@@ -13,6 +13,9 @@ __author__ = 'stefano'
 
 
 class GCModel(ndb.Model):
+    # This is to preserve the order
+    created = ndb.DateTimeProperty(auto_now_add=True)
+
     @property
     def id(self):
         if self.key:

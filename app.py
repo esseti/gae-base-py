@@ -68,7 +68,7 @@ class WSGIApp(webapp2.WSGIApplication):
 
             # cache response if requested and possible
             if request.get('cache') and request.method in ('GET', 'OPTIONS'):
-                exp_date = datetime.utcnow() + timedelta(seconds=cfg.API_CACHE_MAX_AGE)
+                exp_date = datetime.now() + timedelta(seconds=cfg.API_CACHE_MAX_AGE)
                 cache_ctrl = 'max-age=%d, must-revalidate' % cfg.API_CACHE_MAX_AGE
                 resp.headers.update({
                     'Cache-Control': cache_ctrl,
@@ -105,7 +105,7 @@ class WSGIApp(webapp2.WSGIApplication):
             elif msg:
                 logging.error(msg)
             add_args = [('exception_message', msg)]
-            json.dump(error("Internal Server Error", code=500, add_args=add_args), resp)
+            json.dump(error("Something went wrong", code=500, add_args=add_args), resp)
         return resp
 
     def route(self, *args, **kwargs):

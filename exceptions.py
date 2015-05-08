@@ -16,6 +16,11 @@ class GCServerException(Exception):
 class BadRequest(GCAPIException):
     code = 400
 
+    def __init__(self, message=None):
+        Exception.__init__(self)
+        if message:
+            self.args = (message,)
+
 
 class BadParameters(GCAPIException):
     code = httplib.BAD_REQUEST
@@ -41,7 +46,8 @@ class ValidationError(GCAPIException):
 
     def __init__(self, field):
         Exception.__init__(self)
-        self.args = ((self.__ERROR_MISSING % field),)
+        # self.args = ((self.__ERROR_MISSING % field),)
+        self.args = (field, )
         self.field = field
 
 
