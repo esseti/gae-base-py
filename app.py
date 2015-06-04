@@ -31,16 +31,19 @@ class WSGIApp(webapp2.WSGIApplication):
     @staticmethod
     def custom_dispatcher(router, request, response):
 
-        origin = request.headers.get('origin', '*')
+        # origin = request.headers.get('origin', '*')
+        origin = "*"
 
         resp = webapp2.Response(content_type='application/json', charset='UTF-8')
         if request.method == 'OPTIONS':
             # CORS pre-flight request
+            # add x-app-id
             resp.headers.update({'Access-Control-Allow-Credentials': 'true',
                                  'Access-Control-Allow-Origin': origin,
                                  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
                                  'Access-Control-Allow-Headers': ('accept, origin, content-type, '
-                                                                  'x-requested-with, cookie'),
+                                                                  'x-requested-with, cookie, '
+                                                                  'x-app-id, authorization'),
                                  'Access-Control-Max-Age': str(cfg.AUTH_TOKEN_MAX_AGE)})
             return resp
 
@@ -76,7 +79,7 @@ class WSGIApp(webapp2.WSGIApplication):
                 })
 
             resp.headers.update({
-                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Credentials': 'true'})
 
         except GCAPIException as ex:
