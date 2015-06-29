@@ -54,11 +54,11 @@ def __snake_string(snake_str):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
-def __snake_case(d):
+def snake_case(d):
     snake_camel = {}
     for e in d:
         if isinstance(d[e], dict):
-            snake_camel[__snake_string(e)] = __snake_case(d[e])
+            snake_camel[__snake_string(e)] = snake_case(d[e])
         else:
             snake_camel[__snake_string(e)] = d[e]
     return snake_camel
@@ -162,7 +162,7 @@ def json_from_paginated_request(req, pars=()):
     ret['page'] = int(ret['page'])
     ret['size'] = int(ret['size'])
     # beacuse in js this  is a string
-    ret['paginated'] = ret['paginated'] == 'true'
+    ret['paginated'] = bool(ret['paginated'])
     return ret
 
 
@@ -210,7 +210,7 @@ def json_from_request(req, mandatory_props=None, optional_props=None, accept_all
                     if get_value is not None:
                         data[name] = get_value
 
-        return __snake_case(data)
+        return snake_case(data)
 
     else:
         if mandatory_props:

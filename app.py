@@ -31,10 +31,11 @@ class WSGIApp(webapp2.WSGIApplication):
     @staticmethod
     def custom_dispatcher(router, request, response):
 
-        # origin = request.headers.get('origin', '*')
+        origin = request.headers.get('origin', '*')
         origin = "*"
 
         resp = webapp2.Response(content_type='application/json', charset='UTF-8')
+
         if request.method == 'OPTIONS':
             # CORS pre-flight request
             # add x-app-id
@@ -46,6 +47,7 @@ class WSGIApp(webapp2.WSGIApplication):
                                                                   'x-app-id, authorization'),
                                  'Access-Control-Max-Age': str(cfg.AUTH_TOKEN_MAX_AGE)})
             return resp
+      
 
         try:
             app = webapp2.get_app()
@@ -78,10 +80,6 @@ class WSGIApp(webapp2.WSGIApplication):
                     'Expires': exp_date.strftime('%a, %d %b %Y %H:%M:%S GMT')
                 })
 
-            resp.headers.update({
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Credentials': 'true'})
-
         except GCAPIException as ex:
             if hasattr(ex, 'code'):
                 resp.status = ex.code
@@ -107,8 +105,14 @@ class WSGIApp(webapp2.WSGIApplication):
                 logging.exception(msg)
             elif msg:
                 logging.error(msg)
+                logging.exception(msg)
             add_args = [('exception_message', msg)]
             json.dump(error("Something went wrong", code=500, add_args=add_args), resp)
+
+        # move them here, so we can give back errors also for CORS 
+        resp.headers.update({
+                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Credentials': 'true'})
         return resp
 
     def route(self, *args, **kwargs):
