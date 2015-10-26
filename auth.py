@@ -16,16 +16,6 @@ except ImportError:
     def decorator(f):
         return f
 
-
-
-
-
-
-
-
-
-
-
 # TODO: change this to your app.
 import models
 
@@ -159,10 +149,12 @@ class GCAuth():
 
 
 
-# @decorator
+@decorator
 def user_required(handler):
     """
     Decorator to check that user is logged in via Authorization Token
+
+    This also sets the `user` of the request.
 
     :param handler:
     :return: ``User`` or ``None``
